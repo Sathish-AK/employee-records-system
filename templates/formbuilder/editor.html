@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{% if form_schema.id %}Edit{% else %}New{% endif %} Form</h2>
+
+<div class="section">
+  <div class="row">
+    <input id="form-name" placeholder="Form name" value="{{ form_schema.name }}">
+    <input id="form-desc" placeholder="Description" value="{{ form_schema.description }}">
+  </div>
+  <div id="field-list"></div>
+  <div class="row">
+    <button id="add-field">+ Add Field</button>
+    <button id="save-form">Save Form</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ✅ Load initial fields safely as JSON
+const initial = {{ form_schema.fields|safe }};
+const fieldList = document.getElementById('field-list');
+
+function render(){
+  fieldList.innerHTML = "";
+  initial.forEach((f, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'draggable';
+    div.draggable = true;
+    div.innerHTML = `
+      <div class="row">
+        <input placeholder="name" value="${f.name}" data-idx="${idx}" data-key="name">
+        <input placeholder="label" value="${f.label}" data-idx="${idx}" data-key="label">
+        <select data-idx="${idx}" data-key="type">
+          ${["text","number","date","password"].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+        <label><input type="checkbox" ${f.required?'checked':''} data-idx="${idx}" data-key="required"> required</label>
+        <button data-del="${idx}">Delete</button>
+      </div>`;
+    fieldList.appendChild(div);
+
+    // drag and drop
+    div.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', idx); });
+    div.addEventListener('dragover', e=>e.preventDefault());
+    div.addEventListener('drop', e=>{
+      e.preventDefault();
+      const from = +e.dataTransfer.getData('text/plain');
+      const to = idx;
+      const [m] = initial.splice(from,1);
+      initial.splice(to,0,m);
+      render();
+    });
+  });
+}
+render();
+
+fieldList.addEventListener('input', e=>{
+  const idx = +e.target.dataset.idx;
+  const key = e.target.dataset.key;
+  if (!Number.isInteger(idx)) return;
+  if (key === 'required') initial[idx][key] = e.target.checked;
+  else initial[idx][key] = e.target.value;
+});
+
+fieldList.addEventListener('click', e=>{
+  if (e.target.dataset.del !== undefined){
+    const i = +e.target.dataset.del;
+    initial.splice(i,1);
+    render();
+  }
+});
+
+document.getElementById('add-field').onclick = ()=>{
+  initial.push({name:'',label:'',type:'text',required:false});
+  render();
+};
+
+document.getElementById('save-form').onclick = async ()=>{
+  const payload = {
+    name: document.getElementById('form-name').value || 'Untitled Form',
+    description: document.getElementById('form-desc').value || '',
+    fields: initial
+  };
+  const url = location.pathname.endsWith('/new/') ? '/forms/new/' : location.pathname;
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
+    body: JSON.stringify(payload)
+  });
+  if (res.ok){
+    location.href = '/forms/';
+  } else {
+    alert('Failed to save');
+  }
+};
+
+function renderForm(fields, existingData){
+  fieldContainer.innerHTML = "";
+  fields.forEach(f=>{
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <label style="min-width:160px;">${f.label}${f.required ? " *" : ""}</label>
+      <input type="${f.type}" 
+             name="${f.name}" 
+             ${f.required ? "required" : ""} 
+             value="${existingData[f.name] || ""}">
+    `;
+    fieldContainer.appendChild(row);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{% if record %}Edit{% else %}New{% endif %} Employee</h2>
+
+<div class="section">
+  <label>Choose Form</label>
+  <select id="form-select">
+    <option value="">-- Select --</option>
+    {% for f in forms %}
+      <option value="{{ f.id }}" {% if record and record.form.id == f.id %}selected{% endif %}>
+        {{ f.name }}
+      </option>
+    {% endfor %}
+  </select>
+</div>
+
+<div id="form-fields" class="section"></div>
+
+<div class="row">
+  <button id="save-emp">Save</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if record %}
+  {{ record.data|default:"{}"|json_script:"employee-data" }}
+{% endif %}
+{{ forms|json_script:"all-forms" }}
+
+<script>
+let existing = {};
+{% if record %}
+  existing = JSON.parse(document.getElementById("employee-data").textContent);
+{% endif %}
+
+// ✅ All forms with their fields are embedded here
+const allForms = JSON.parse(document.getElementById("all-forms").textContent);
+
+const formSelect = document.getElementById("form-select");
+const fieldContainer = document.getElementById("form-fields");
+
+function renderForm(fields, existingData){
+  fieldContainer.innerHTML = "";
+  fields.forEach(f=>{
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <label style="min-width:160px;">${f.label}</label>
+      <input type="${f.type}" name="${f.name}"
+             ${f.required ? "required" : ""}
+             value="${existingData[f.name] || ""}">
+    `;
+    fieldContainer.appendChild(row);
+  });
+}
+
+formSelect.onchange = ()=>{
+  const selectedId = +formSelect.value;
+  const form = allForms.find(f=>f.id === selectedId);
+  if (form) renderForm(form.fields, existing);
+};
+
+// auto-load if editing
+if (formSelect.value){
+  const selectedId = +formSelect.value;
+  const form = allForms.find(f=>f.id === selectedId);
+  if (form) renderForm(form.fields, existing);
+}
+
+// Save record
+document.getElementById("save-emp").onclick = async ()=>{
+  if (!formSelect.value){
+    alert("Please select a form");
+    return;
+  }
+  const payload = {
+    form_id: +formSelect.value,
+    data: Object.fromEntries([...fieldContainer.querySelectorAll("input")].map(i=>[i.name, i.value]))
+  };
+  const url = location.pathname.includes("/edit/") ? location.pathname : "/employees/new/";
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken")
+    },
+    body: JSON.stringify(payload)
+  });
+  if (res.ok){
+    location.href = "/employees/";
+  } else {
+    const err = await res.json();
+    alert(err.error || "Failed to save employee");
+    }
+};
+</script>
+{% endblock %}

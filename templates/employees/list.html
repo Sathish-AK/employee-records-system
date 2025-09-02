@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Employees</h2>
+<div class="row">
+  <a class="badge" href="/employees/new/">+ New Employee</a>
+  <form method="get" action="">
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by ID or Name...">
+    <button type="submit">Search</button>
+  </form>
+</div>
+<table class="table">
+  <tr><th>ID</th><th>Form</th><th>Data</th><th>Actions</th></tr>
+  {% for r in records %}
+  <tr>
+    <td>{{ r.id }}</td>
+    <td>{{ r.form.name }}</td>
+    <td><code>{{ r.data }}</code></td>
+    <td><a href="/employees/{{ r.id }}/edit/">Edit</a> | <a href="/employees/{{ r.id }}/delete/">Delete</a></td>
+  </tr>
+  {% empty %}
+  <tr><td colspan="4">No employees yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

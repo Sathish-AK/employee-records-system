@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employee Manager</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="nav">
+    <a href="/">Home</a>
+    <nav>
+      <a href="/accounts/register/">Register</a>
+      <a href="/accounts/login/">Login</a>
+      <a href="/forms/">Form Builder</a>
+      <a href="/employees/">Employees</a>
+      <a href="/accounts/profile/">Profile</a>
+      <a href="/accounts/logout/">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    {% if messages %}
+      <ul class="messages">{% for m in messages %}<li class="{{ m.tags }}">{{ m }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Forms</h2>
+<a class="badge" href="/forms/new/">+ New Form</a>
+<table class="table">
+  <tr><th>Name</th><th>Description</th><th>Fields</th><th>Actions</th></tr>
+  {% for f in forms %}
+    <tr>
+      <td>{{ f.name }}</td>
+      <td>{{ f.description }}</td>
+      <td><span class="badge">{{ f.fields|length }}</span></td>
+      <td><a href="/forms/{{ f.id }}/edit/">Edit</a> | <a href="/forms/{{ f.id }}/delete/">Delete</a></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4">No forms yet.</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>My Profile</h2>
+<form method="post">{% csrf_token %}
+  <div class="row">
+    <label>Full name</label>
+    <input name="full_name" value="{{ request.user.profile.full_name }}">
+    <label>Bio</label>
+    <textarea name="bio">{{ request.user.profile.bio }}</textarea>
+  </div>
+  <button type="submit">Save</button>
+</form>
+<a class="badge" href="/accounts/change-password/">Change Password</a>
+{% endblock %}
