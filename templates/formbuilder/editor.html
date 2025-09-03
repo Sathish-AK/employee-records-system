@@ -1,23 +1,42 @@
 {% extends "base.html" %}
-{% block content %}
-<h2>{% if form_schema.id %}Edit{% else %}New{% endif %} Form</h2>
+{% block title %}{% if form_schema.id %}Edit{% else %}New{% endif %} Form{% endblock %}
 
-<div class="section">
-  <div class="row">
-    <input id="form-name" placeholder="Form name" value="{{ form_schema.name }}">
-    <input id="form-desc" placeholder="Description" value="{{ form_schema.description }}">
-  </div>
-  <div id="field-list"></div>
-  <div class="row">
-    <button id="add-field">+ Add Field</button>
-    <button id="save-form">Save Form</button>
+{% block content %}
+<h2 class="text-center mt-4">
+  {% if form_schema.id %}Edit{% else %}New{% endif %} Form
+</h2>
+
+<div class="d-flex justify-content-center mt-3">
+  <div class="card shadow-sm" style="width: 700px;">
+    <div class="card-body">
+
+      <!-- Form name + description -->
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Form Name</label>
+        <input id="form-name" class="form-control" placeholder="Form name" value="{{ form_schema.name }}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Description</label>
+        <input id="form-desc" class="form-control" placeholder="Description" value="{{ form_schema.description }}">
+      </div>
+
+      <!-- Dynamic field list -->
+      <div id="field-list" class="mb-3"></div>
+
+      <!-- Action buttons -->
+      <div class="d-flex justify-content-between mt-4">
+        <button id="add-field" class="btn btn-outline-primary">+ Add Field</button>
+        <button id="save-form" class="btn btn-success">💾 Save Form</button>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// ✅ Load initial fields safely as JSON
+// ✅ Load initial fields safely
 const initial = {{ form_schema.fields|safe }};
 const fieldList = document.getElementById('field-list');
 
@@ -25,17 +44,30 @@ function render(){
   fieldList.innerHTML = "";
   initial.forEach((f, idx)=>{
     const div = document.createElement('div');
-    div.className = 'draggable';
+    div.className = 'p-3 mb-2 border rounded bg-light';  // Bootstrap box
     div.draggable = true;
     div.innerHTML = `
-      <div class="row">
-        <input placeholder="name" value="${f.name}" data-idx="${idx}" data-key="name">
-        <input placeholder="label" value="${f.label}" data-idx="${idx}" data-key="label">
-        <select data-idx="${idx}" data-key="type">
-          ${["text","number","date","password"].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}
-        </select>
-        <label><input type="checkbox" ${f.required?'checked':''} data-idx="${idx}" data-key="required"> required</label>
-        <button data-del="${idx}">Delete</button>
+      <div class="row g-2 align-items-center">
+        <div class="col-md-3">
+          <input class="form-control" placeholder="name" value="${f.name}" data-idx="${idx}" data-key="name">
+        </div>
+        <div class="col-md-3">
+          <input class="form-control" placeholder="label" value="${f.label}" data-idx="${idx}" data-key="label">
+        </div>
+        <div class="col-md-2">
+          <select class="form-select" data-idx="${idx}" data-key="type">
+            ${["text","number","date","password"].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" ${f.required?'checked':''} data-idx="${idx}" data-key="required">
+            <label class="form-check-label">Required</label>
+          </div>
+        </div>
+        <div class="col-md-1 text-end">
+          <button type="button" class="btn btn-sm btn-danger" data-del="${idx}">✖</button>
+        </div>
       </div>`;
     fieldList.appendChild(div);
 
@@ -90,24 +122,8 @@ document.getElementById('save-form').onclick = async ()=>{
   if (res.ok){
     location.href = '/forms/';
   } else {
-    alert('Failed to save');
+    alert('❌ Failed to save');
   }
 };
-
-function renderForm(fields, existingData){
-  fieldContainer.innerHTML = "";
-  fields.forEach(f=>{
-    const row = document.createElement("div");
-    row.className = "row";
-    row.innerHTML = `
-      <label style="min-width:160px;">${f.label}${f.required ? " *" : ""}</label>
-      <input type="${f.type}" 
-             name="${f.name}" 
-             ${f.required ? "required" : ""} 
-             value="${existingData[f.name] || ""}">
-    `;
-    fieldContainer.appendChild(row);
-  });
-}
 </script>
 {% endblock %}

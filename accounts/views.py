@@ -12,10 +12,14 @@ def register_view(request):
             user = User.objects.create_user(
                 username=form.cleaned_data['username'],
                 email=form.cleaned_data['email'],
-                password=form.cleaned_data['password']
+                password=form.cleaned_data['password1']  # ✅ use password1
             )
-            messages.success(request, "Registration successful. Please log in.")
+            messages.success(request, "🎉 Registration successful. Please log in.")
             return redirect('login')
+        else:
+            print("inside error")
+            # messages.error(request, "⚠ Please correct the errors below.")
+            print(form.errors)  # Debug in console
     else:
         form = RegisterForm()
     return render(request, "accounts/register.html", {"form": form})

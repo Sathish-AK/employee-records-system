@@ -1,23 +1,35 @@
 {% extends "base.html" %}
+{% block title %}{% if record %}Edit{% else %}New{% endif %} Employee{% endblock %}
+
 {% block content %}
-<h2>{% if record %}Edit{% else %}New{% endif %} Employee</h2>
+<h2 style="text-align: center; margin-top: 30px;">
+  {% if record %}Edit{% else %}New{% endif %} Employee
+</h2>
 
-<div class="section">
-  <label>Choose Form</label>
-  <select id="form-select">
-    <option value="">-- Select --</option>
-    {% for f in forms %}
-      <option value="{{ f.id }}" {% if record and record.form.id == f.id %}selected{% endif %}>
-        {{ f.name }}
-      </option>
-    {% endfor %}
-  </select>
-</div>
+<div style="display: flex; justify-content: center; margin-top: 20px;">
+  <div style="width: 500px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0px 2px 6px rgba(0,0,0,0.1);">
+    
+    <!-- Choose Form -->
+    <div class="mb-3" style="text-align: center;padding: 10px;">>
+      <label for="form-select" class="form-label">Choose Form:</label>
+      <select id="form-select" class="form-select">
+        <option value="">-- Select --</option>
+        {% for f in forms %}
+          <option value="{{ f.id }}" {% if record and record.form.id == f.id %}selected{% endif %}>
+            {{ f.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
 
-<div id="form-fields" class="section"></div>
+    <!-- Dynamic fields -->
+    <div id="form-fields"></div>
 
-<div class="row">
-  <button id="save-emp">Save</button>
+    <!-- Save button -->
+    <div class="mt-4 text-center">
+      <button id="save-emp" class="btn btn-primary w-100">Save Employee</button>
+    </div>
+  </div>
 </div>
 {% endblock %}
 
@@ -33,7 +45,7 @@ let existing = {};
   existing = JSON.parse(document.getElementById("employee-data").textContent);
 {% endif %}
 
-// ✅ All forms with their fields are embedded here
+// All forms with their fields
 const allForms = JSON.parse(document.getElementById("all-forms").textContent);
 
 const formSelect = document.getElementById("form-select");
@@ -41,18 +53,35 @@ const fieldContainer = document.getElementById("form-fields");
 
 function renderForm(fields, existingData){
   fieldContainer.innerHTML = "";
+
   fields.forEach(f=>{
-    const row = document.createElement("div");
-    row.className = "row";
-    row.innerHTML = `
-      <label style="min-width:160px;">${f.label}</label>
-      <input type="${f.type}" name="${f.name}"
-             ${f.required ? "required" : ""}
-             value="${existingData[f.name] || ""}">
-    `;
-    fieldContainer.appendChild(row);
+    // Create wrapper
+    const wrapper = document.createElement("div");
+    wrapper.className = "mb-3 clsss";
+
+    // Create label
+    const label = document.createElement("label");
+    label.className = "form-label fw-semibold";
+    label.textContent = f.label + (f.required ? " *" : "");
+    label.setAttribute("for", f.name);
+
+    // Create input
+    const input = document.createElement("input");
+    input.type = f.type;
+    input.name = f.name;
+    input.id = f.name;
+    input.value = existingData[f.name] || "";
+    input.className = "form-control";
+    if (f.required) input.required = true;
+
+    // Append
+    wrapper.appendChild(label);
+    wrapper.appendChild(input);
+    fieldContainer.appendChild(wrapper);
   });
 }
+
+
 
 formSelect.onchange = ()=>{
   const selectedId = +formSelect.value;
@@ -70,7 +99,7 @@ if (formSelect.value){
 // Save record
 document.getElementById("save-emp").onclick = async ()=>{
   if (!formSelect.value){
-    alert("Please select a form");
+    alert("⚠ Please select a form");
     return;
   }
   const payload = {
@@ -90,8 +119,17 @@ document.getElementById("save-emp").onclick = async ()=>{
     location.href = "/employees/";
   } else {
     const err = await res.json();
-    alert(err.error || "Failed to save employee");
-    }
+    alert(err.error || "❌ Failed to save employee");
+  }
 };
 </script>
+<style>
+.clsss {
+    padding: 10px;
+    margin-bottom: 15px;
+    background-color: #f8f9fa;   /* light gray background */
+    border: 1px solid #dee2e6;  /* soft border */
+    border-radius: 6px;         /* rounded corners */
+}
+</style>
 {% endblock %}

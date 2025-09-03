@@ -1,8 +1,77 @@
 {% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
 {% block content %}
-<h2>Register</h2>
-<form method="post">{% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Register</button>
-</form>
+<h2 style="text-align: center; margin-top: 30px;">Register</h2>
+
+<div style="display: flex; justify-content: center; margin-top: 20px;">
+  <form method="post" style="width: 350px;">
+    {% csrf_token %}
+
+    {% if form.errors %}
+      <div class="alert alert-danger">
+        <ul>
+          {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+              <li>{{ field }}: {{ error }}</li>
+            {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+
+    <label for="username">Username:</label><br>
+    <input type="text" id="username" name="username" value="{{ form.data.username }}" required class="form-control mb-3">
+
+    <label for="email">Email:</label><br>
+    <input type="email" id="email" name="email" value="{{ form.data.email }}" required class="form-control mb-3">
+
+    <label for="password1">Password:</label><br>
+    <div class="password-wrapper mb-3">
+      <input type="password" id="password1" name="password1" required class="form-control">
+      <span class="toggle-btn" onclick="togglePassword('password1', this)">Show</span>
+    </div>
+
+    <label for="password2">Confirm Password:</label><br>
+    <div class="password-wrapper mb-3">
+      <input type="password" id="password2" name="password2" required class="form-control">
+      <span class="toggle-btn" onclick="togglePassword('password2', this)">Show</span>
+    </div>
+
+    <input type="submit" value="Register" 
+           class="btn btn-primary w-100 mt-3">
+  </form>
+</div>
+
+<style>
+.password-wrapper {
+  position: relative;
+}
+.password-wrapper input {
+  padding-right: 60px; /* space for toggle */
+}
+.password-wrapper .toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 0.9em;
+  color: #0d6efd;
+  user-select: none;
+}
+</style>
+
+<script>
+function togglePassword(fieldId, toggleElem) {
+  const input = document.getElementById(fieldId);
+  if (input.type === "password") {
+    input.type = "text";
+    toggleElem.textContent = "Hide";
+  } else {
+    input.type = "password";
+    toggleElem.textContent = "Show";
+  }
+}
+</script>
 {% endblock %}

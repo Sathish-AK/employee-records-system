@@ -1,11 +1,54 @@
 {% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
 {% block content %}
-<h1>Employee Management System</h1>
-<p>Build dynamic forms, create employees, and manage via REST APIs (JWT).</p>
-<div class="grid">
-  <a class="card" href="/accounts/register/">Register</a>
-  <a class="card" href="/accounts/login/">Login</a>
-  <a class="card" href="/forms/">Form Builder</a>
-  <a class="card" href="/employees/">Employees</a>
+<div class="container" style="max-width: 900px;">
+  <h1 class="text-center mt-4 text-primary">Employee Management System</h1>
+  <p class="text-center text-muted mb-4">
+    Build dynamic forms, create employees, and manage everything easily.
+  </p>
+
+  <div class="row g-4">
+    <div class="col-md-6 col-lg-3">
+      <a href="/accounts/register/" class="text-decoration-none">
+        <div class="card shadow-sm text-center h-100">
+          <div class="card-body">
+            <h5 class="card-title">📝 Register</h5>
+            <p class="card-text text-muted">Create a new account.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a href="/accounts/login/" class="text-decoration-none">
+        <div class="card shadow-sm text-center h-100">
+          <div class="card-body">
+            <h5 class="card-title">🔑 Login</h5>
+            <p class="card-text text-muted">Access your account securely.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a href="/forms/" class="text-decoration-none">
+        <div class="card shadow-sm text-center h-100">
+          <div class="card-body">
+            <h5 class="card-title">📋 Form Builder</h5>
+            <p class="card-text text-muted">Design and manage dynamic forms.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-md-6 col-lg-3">
+      <a href="/employees/" class="text-decoration-none">
+        <div class="card shadow-sm text-center h-100">
+          <div class="card-body">
+            <h5 class="card-title">👥 Employees</h5>
+            <p class="card-text text-muted">Add and manage employees.</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
 </div>
 {% endblock %}

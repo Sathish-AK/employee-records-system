@@ -1,14 +1,26 @@
 {% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
 {% block content %}
-<h2>My Profile</h2>
-<form method="post">{% csrf_token %}
-  <div class="row">
-    <label>Full name</label>
-    <input name="full_name" value="{{ request.user.profile.full_name }}">
-    <label>Bio</label>
-    <textarea name="bio">{{ request.user.profile.bio }}</textarea>
-  </div>
-  <button type="submit">Save</button>
-</form>
-<a class="badge" href="/accounts/change-password/">Change Password</a>
+<h2 style="text-align: center; margin-top: 30px;">My Profile</h2>
+
+<div style="display: flex; justify-content: center; margin-top: 20px;">
+  <form method="post" style="width: 400px;">
+    {% csrf_token %}
+
+    <label for="full_name">Full Name:</label><br>
+    <input type="text" id="full_name" name="full_name" value="{{ request.user.profile.full_name }}"><br><br>
+
+    <label for="bio">Bio:</label><br>
+    <textarea id="bio" name="bio" rows="3" style="width: 100%;">{{ request.user.profile.bio }}</textarea><br><br>
+
+    <input type="submit" value="Save" style="padding: 8px 20px; background-color: #0d6efd; border: none; color: white; border-radius: 4px;">
+  </form>
+</div>
+
+<div style="text-align: center; margin-top: 15px;">
+  <a href="/accounts/change-password/" style="text-decoration: none; color: #0d6efd; font-weight: bold;">
+    🔑 Change Password
+  </a>
+</div>
 {% endblock %}
