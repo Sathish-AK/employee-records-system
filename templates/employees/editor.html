@@ -53,35 +53,46 @@ const fieldContainer = document.getElementById("form-fields");
 
 function renderForm(fields, existingData){
   fieldContainer.innerHTML = "";
-
   fields.forEach(f=>{
-    // Create wrapper
-    const wrapper = document.createElement("div");
-    wrapper.className = "mb-3 clsss";
+    const row = document.createElement("div");
+    row.className = "row mb-3";
 
-    // Create label
-    const label = document.createElement("label");
-    label.className = "form-label fw-semibold";
-    label.textContent = f.label + (f.required ? " *" : "");
-    label.setAttribute("for", f.name);
+    if (f.type === "password") {
+      row.innerHTML = `
+        <label style="min-width:160px;">${f.label}${f.required ? " *" : ""}</label>
+        <div class="password-wrapper">
+          <input type="password" class="form-control"
+                name="${f.name}" 
+                ${f.required ? "required" : ""} 
+                value="${existingData[f.name] || ""}">
+          <span class="toggle-btn" onclick="togglePassword(this)">Show</span>
+        </div>
+      `;
+    } else {
+      row.innerHTML = `
+        <label style="min-width:160px;">${f.label}${f.required ? " *" : ""}</label>
+        <input type="${f.type}" class="form-control"
+              name="${f.name}" 
+              ${f.required ? "required" : ""} 
+              value="${existingData[f.name] || ""}">
+      `;
+    }
 
-    // Create input
-    const input = document.createElement("input");
-    input.type = f.type;
-    input.name = f.name;
-    input.id = f.name;
-    input.value = existingData[f.name] || "";
-    input.className = "form-control";
-    if (f.required) input.required = true;
-
-    // Append
-    wrapper.appendChild(label);
-    wrapper.appendChild(input);
-    fieldContainer.appendChild(wrapper);
+    fieldContainer.appendChild(row);
   });
 }
 
-
+// ✅ Toggle function
+function togglePassword(toggleElem) {
+  const input = toggleElem.previousElementSibling;
+  if (input.type === "password") {
+    input.type = "text";
+    toggleElem.textContent = "Hide";
+  } else {
+    input.type = "password";
+    toggleElem.textContent = "Show";
+  }
+}
 
 formSelect.onchange = ()=>{
   const selectedId = +formSelect.value;
@@ -97,15 +108,51 @@ if (formSelect.value){
 }
 
 // Save record
+// Save record
 document.getElementById("save-emp").onclick = async ()=>{
   if (!formSelect.value){
-    alert("⚠ Please select a form");
+    alert("Please select a form");
     return;
   }
+
+  const inputs = [...fieldContainer.querySelectorAll("input")];
+  const payloadData = {};
+
+  for (let i of inputs) {
+    let val = i.value.trim();
+
+    // ✅ Strong password check if type=password
+    if (i.type === "password") {
+      if (val.length < 8) {
+        alert("⚠ Password must be at least 8 characters long.");
+        return;
+      }
+      if (!/[A-Z]/.test(val)) {
+        alert("⚠ Password must contain at least one uppercase letter.");
+        return;
+      }
+      if (!/[a-z]/.test(val)) {
+        alert("⚠ Password must contain at least one lowercase letter.");
+        return;
+      }
+      if (!/[0-9]/.test(val)) {
+        alert("⚠ Password must contain at least one number.");
+        return;
+      }
+      if (!/[@$!%*?&]/.test(val)) {
+        alert("⚠ Password must contain at least one special character (@$!%*?&).");
+        return;
+      }
+    }
+
+    payloadData[i.name] = val;
+  }
+
   const payload = {
     form_id: +formSelect.value,
-    data: Object.fromEntries([...fieldContainer.querySelectorAll("input")].map(i=>[i.name, i.value]))
+    data: payloadData
   };
+
   const url = location.pathname.includes("/edit/") ? location.pathname : "/employees/new/";
   const res = await fetch(url, {
     method: "POST",
@@ -119,9 +166,10 @@ document.getElementById("save-emp").onclick = async ()=>{
     location.href = "/employees/";
   } else {
     const err = await res.json();
-    alert(err.error || "❌ Failed to save employee");
+    alert(err.error || "Failed to save employee");
   }
 };
+
 </script>
 <style>
 .clsss {
@@ -130,6 +178,41 @@ document.getElementById("save-emp").onclick = async ()=>{
     background-color: #f8f9fa;   /* light gray background */
     border: 1px solid #dee2e6;  /* soft border */
     border-radius: 6px;         /* rounded corners */
+}
+.password-wrapper input {
+  width: 100%;
+}
+.toggle-btn {
+  user-select: none;
+}
+
+#form-fields input.form-control {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Keep password toggle aligned */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+.password-wrapper input {
+  width: 100%;
+  padding-right: 60px; /* space for Show/Hide */
+  box-sizing: border-box;
+}
+.password-wrapper .toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 0.9em;
+  color: #0d6efd;
+  user-select: none;
+}
+.password-wrapper{
+  padding: 0px;
 }
 </style>
 {% endblock %}

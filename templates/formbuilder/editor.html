@@ -1,33 +1,36 @@
 {% extends "base.html" %}
-{% block title %}{% if form_schema.id %}Edit{% else %}New{% endif %} Form{% endblock %}
+{% block title %}{% if form_schema.id %}Edit Form{% else %}New Form{% endif %}{% endblock %}
 
 {% block content %}
-<h2 class="text-center mt-4">
-  {% if form_schema.id %}Edit{% else %}New{% endif %} Form
-</h2>
+<div class="container" style="max-width: 900px;">
+  <h2 class="text-center mt-4">
+    {% if form_schema.id %}
+      Edit Form: {{ form_schema.name }}
+    {% else %}
+      Create New Form
+    {% endif %}
+  </h2>
 
-<div class="d-flex justify-content-center mt-3">
-  <div class="card shadow-sm" style="width: 700px;">
+  <div class="card shadow-sm mt-4">
     <div class="card-body">
-
-      <!-- Form name + description -->
+      <!-- Form name & description -->
       <div class="mb-3">
-        <label class="form-label fw-semibold">Form Name</label>
-        <input id="form-name" class="form-control" placeholder="Form name" value="{{ form_schema.name }}">
+        <label for="form-name" class="form-label">Form Name <span class="text-danger">*</span></label>
+        <input id="form-name" class="form-control" placeholder="Enter form name" value="{{ form_schema.name }}">
+        <div id="form-name-error" class="text-danger small mt-1"></div>
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-semibold">Description</label>
-        <input id="form-desc" class="form-control" placeholder="Description" value="{{ form_schema.description }}">
+        <label for="form-desc" class="form-label">Description</label>
+        <input id="form-desc" class="form-control" placeholder="Enter description" value="{{ form_schema.description }}">
       </div>
 
-      <!-- Dynamic field list -->
+      <!-- Fields list -->
       <div id="field-list" class="mb-3"></div>
 
-      <!-- Action buttons -->
-      <div class="d-flex justify-content-between mt-4">
-        <button id="add-field" class="btn btn-outline-primary">+ Add Field</button>
-        <button id="save-form" class="btn btn-success">💾 Save Form</button>
+      <div class="d-flex justify-content-between">
+        <button id="add-field" class="btn btn-secondary">+ Add Field</button>
+        <button id="save-form" class="btn btn-primary">Save Form</button>
       </div>
     </div>
   </div>
@@ -36,7 +39,7 @@
 
 {% block scripts %}
 <script>
-// ✅ Load initial fields safely
+// ✅ Load initial fields (safe JSON)
 const initial = {{ form_schema.fields|safe }};
 const fieldList = document.getElementById('field-list');
 
@@ -44,8 +47,7 @@ function render(){
   fieldList.innerHTML = "";
   initial.forEach((f, idx)=>{
     const div = document.createElement('div');
-    div.className = 'p-3 mb-2 border rounded bg-light';  // Bootstrap box
-    div.draggable = true;
+    div.className = 'card p-3 mb-2 shadow-sm';
     div.innerHTML = `
       <div class="row g-2 align-items-center">
         <div class="col-md-3">
@@ -54,24 +56,23 @@ function render(){
         <div class="col-md-3">
           <input class="form-control" placeholder="label" value="${f.label}" data-idx="${idx}" data-key="label">
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
           <select class="form-select" data-idx="${idx}" data-key="type">
             ${["text","number","date","password"].map(t=>`<option ${f.type===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
-        <div class="col-md-3">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" ${f.required?'checked':''} data-idx="${idx}" data-key="required">
-            <label class="form-check-label">Required</label>
-          </div>
+        <div class="col-md-2 form-check">
+          <input type="checkbox" class="form-check-input" ${f.required?'checked':''} data-idx="${idx}" data-key="required">
+          <label class="form-check-label">Required</label>
         </div>
         <div class="col-md-1 text-end">
-          <button type="button" class="btn btn-sm btn-danger" data-del="${idx}">✖</button>
+          <button class="btn btn-sm btn-danger" data-del="${idx}">X</button>
         </div>
       </div>`;
     fieldList.appendChild(div);
 
-    // drag and drop
+    // Drag + drop (optional if you want ordering)
+    div.draggable = true;
     div.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/plain', idx); });
     div.addEventListener('dragover', e=>e.preventDefault());
     div.addEventListener('drop', e=>{
@@ -86,6 +87,7 @@ function render(){
 }
 render();
 
+// Update field values
 fieldList.addEventListener('input', e=>{
   const idx = +e.target.dataset.idx;
   const key = e.target.dataset.key;
@@ -94,6 +96,7 @@ fieldList.addEventListener('input', e=>{
   else initial[idx][key] = e.target.value;
 });
 
+// Delete field
 fieldList.addEventListener('click', e=>{
   if (e.target.dataset.del !== undefined){
     const i = +e.target.dataset.del;
@@ -102,27 +105,73 @@ fieldList.addEventListener('click', e=>{
   }
 });
 
-document.getElementById('add-field').onclick = ()=>{
+// Add field
+document.getElementById('add-field').onclick = (e)=>{
+  e.preventDefault();
   initial.push({name:'',label:'',type:'text',required:false});
   render();
 };
 
-document.getElementById('save-form').onclick = async ()=>{
+// Save form
+document.getElementById('save-form').onclick = async (e)=>{
+  e.preventDefault();
+
+  const formNameInput = document.getElementById('form-name');
+  const formName = formNameInput.value.trim();
+  const formNameError = document.getElementById('form-name-error');
+  formNameError.textContent = "";
+
+  // ✅ Require form name
+  if (!formName) {
+    formNameError.textContent = "⚠ Please enter a Form Name.";
+    formNameInput.focus();
+    return;
+  }
+
+  // ✅ At least one field
+  if (initial.length === 0) {
+    alert("⚠ A form must contain at least one field.");
+    return;
+  }
+
+  // ✅ Validate fields + duplicates
+  const names = new Set();
+  const labels = new Set();
+  for (let f of initial) {
+    if (!f.name || !f.label || !f.type) {
+      alert("⚠ Each field must have a name, label, and type.");
+      return;
+    }
+    if (names.has(f.name)) {
+      alert(`⚠ Duplicate field name: "${f.name}".`);
+      return;
+    }
+    if (labels.has(f.label)) {
+      alert(`⚠ Duplicate field label: "${f.label}".`);
+      return;
+    }
+    names.add(f.name);
+    labels.add(f.label);
+  }
+
   const payload = {
-    name: document.getElementById('form-name').value || 'Untitled Form',
+    name: formName,
     description: document.getElementById('form-desc').value || '',
     fields: initial
   };
+
   const url = location.pathname.endsWith('/new/') ? '/forms/new/' : location.pathname;
   const res = await fetch(url, {
     method:'POST',
     headers:{'Content-Type':'application/json','X-CSRFToken':getCookie('csrftoken')},
     body: JSON.stringify(payload)
   });
+
   if (res.ok){
     location.href = '/forms/';
   } else {
-    alert('❌ Failed to save');
+    const errorData = await res.json();   // ✅ Parse JSON from backend
+    formNameError.textContent = errorData.error || "❌ Failed to save form";  // Show near field
   }
 };
 </script>

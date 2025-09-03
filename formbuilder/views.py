@@ -1,7 +1,7 @@
 import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseBadRequest
 from .models import FormSchema
 
 
@@ -17,10 +17,37 @@ def form_new(request):
     """Create a new form schema."""
     if request.method == "POST":
         payload = json.loads(request.body.decode())
+
+        # ✅ Require form name
+        form_name = payload.get("name", "").strip()
+        if not form_name:
+            return HttpResponseBadRequest("⚠ Form name is required")
+
+        # ✅ Check duplicate name for this user
+        if FormSchema.objects.filter(owner=request.user, name=form_name).exists():
+            return JsonResponse({"error": "⚠ A form with this name already exists"}, status=400)
+
+        # ✅ At least one field
+        fields = payload.get("fields", [])
+        if not fields:
+            return HttpResponseBadRequest("⚠ A form must contain at least one field")
+
+        # ✅ Validate fields
+        seen_names, seen_labels = set(), set()
+        for f in fields:
+            if not f.get("name") or not f.get("label") or not f.get("type"):
+                return HttpResponseBadRequest("⚠ Each field must have a name, label, and type")
+            if f["name"] in seen_names:
+                return HttpResponseBadRequest(f"⚠ Duplicate field name: {f['name']}")
+            if f["label"] in seen_labels:
+                return HttpResponseBadRequest(f"⚠ Duplicate field label: {f['label']}")
+            seen_names.add(f["name"])
+            seen_labels.add(f["label"])
+
         form = FormSchema.objects.create(
-            name=payload.get("name", "Untitled Form"),
+            name=form_name,
             description=payload.get("description", ""),
-            fields=payload.get("fields", []),
+            fields=fields,
             owner=request.user,
         )
         return JsonResponse({"id": form.id, "ok": True})
@@ -36,18 +63,47 @@ def form_edit(request, pk):
 
     if request.method == "POST":
         payload = json.loads(request.body.decode())
-        form_schema.name = payload.get("name", form_schema.name)
-        form_schema.description = payload.get("description", form_schema.description)
-        form_schema.fields = payload.get("fields", [])
+
+        # ✅ Require form name
+        form_name = payload.get("name", "").strip()
+        if not form_name:
+            return HttpResponseBadRequest("⚠ Form name is required")
+
+        # ✅ Check duplicate name (exclude current one)
+        existing = FormSchema.objects.filter(owner=request.user, name=form_name).exclude(pk=pk)
+        if existing.exists():
+            return JsonResponse({"error": "⚠ A form with this name already exists"}, status=400)
+
+        # ✅ At least one field
+        fields = payload.get("fields", [])
+        if not fields:
+            return HttpResponseBadRequest("⚠ A form must contain at least one field")
+
+        # ✅ Validate fields
+        seen_names, seen_labels = set(), set()
+        for f in fields:
+            if not f.get("name") or not f.get("label") or not f.get("type"):
+                return HttpResponseBadRequest("⚠ Each field must have a name, label, and type")
+            if f["name"] in seen_names:
+                return HttpResponseBadRequest(f"⚠ Duplicate field name: {f['name']}")
+            if f["label"] in seen_labels:
+                return HttpResponseBadRequest(f"⚠ Duplicate field label: {f['label']}")
+            seen_names.add(f["name"])
+            seen_labels.add(f["label"])
+
+        # ✅ Save
+        form_schema.name = form_name
+        form_schema.description = payload.get("description", "")
+        form_schema.fields = fields
         form_schema.save()
         return JsonResponse({"ok": True})
 
-    # ✅ Pass safe JSON-ready dict to template
+    # Pass safe dict to template
     schema_dict = {
         "id": form_schema.id,
         "name": form_schema.name,
         "description": form_schema.description,
-        "fields": json.dumps(form_schema.fields),  # ensure JSON string
+        "fields": json.dumps(form_schema.fields),  # JSON string for template
     }
     return render(request, "formbuilder/editor.html", {"form_schema": schema_dict})
 

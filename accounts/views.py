@@ -54,15 +54,46 @@ def profile_view(request):
 @login_required
 def change_password_view(request):
     if request.method == "POST":
-        form = ChangePasswordForm(request.POST)
-        if form.is_valid():
-            if request.user.check_password(form.cleaned_data['old_password']):
-                request.user.set_password(form.cleaned_data['new_password'])
-                request.user.save()
-                messages.success(request, "Password changed. Please log in again.")
-                logout(request)
-                return redirect('login')
-            messages.error(request, "Old password incorrect")
-    else:
-        form = ChangePasswordForm()
-    return render(request, "accounts/change_password.html", {"form": form})
+        old_password = request.POST.get("old_password")
+        new_password1 = request.POST.get("new_password1")
+        new_password2 = request.POST.get("new_password2")
+
+        # ✅ Check old password
+        if not request.user.check_password(old_password):
+            messages.error(request, "❌ Old password is incorrect.")
+            return redirect("change_password")
+
+        # ✅ Prevent same old and new password
+        if old_password == new_password1:
+            messages.error(request, "⚠ New password cannot be the same as the old password.")
+            return redirect("change_password")
+
+        # ✅ Check match
+        if new_password1 != new_password2:
+            messages.error(request, "❌ New password and Confirm Password do not match.")
+            return redirect("change_password")
+
+        # ✅ Strong password check
+        if len(new_password1) < 8:
+            messages.error(request, "⚠ Password must be at least 8 characters long.")
+            return redirect("change_password")
+        if not re.search(r"[A-Z]", new_password1):
+            messages.error(request, "⚠ Password must contain at least one uppercase letter.")
+            return redirect("change_password")
+        if not re.search(r"[a-z]", new_password1):
+            messages.error(request, "⚠ Password must contain at least one lowercase letter.")
+            return redirect("change_password")
+        if not re.search(r"[0-9]", new_password1):
+            messages.error(request, "⚠ Password must contain at least one number.")
+            return redirect("change_password")
+        if not re.search(r"[@$!%*?&]", new_password1):
+            messages.error(request, "⚠ Password must contain at least one special character (@$!%*?&).")
+            return redirect("change_password")
+
+        # ✅ All checks passed → set new password
+        request.user.set_password(new_password1)
+        request.user.save()
+        messages.success(request, "✅ Password changed successfully. Please log in again.")
+        return redirect("login")
+
+    return render(request, "accounts/change_password.html")

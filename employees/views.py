@@ -19,10 +19,19 @@ def employee_delete(request, pk):
 def employee_edit(request, pk):
     rec = get_object_or_404(EmployeeRecord, pk=pk, created_by=request.user)
     forms = FormSchema.objects.filter(owner=request.user)
+
     if request.method == "POST":
         payload = json.loads(request.body.decode())
+
+        # ✅ Update form if changed
+        form_id = payload.get("form_id")
+        if form_id:
+            rec.form_id = form_id
+
+        # ✅ Update employee data
         rec.data = payload.get("data", rec.data)
         rec.save()
+
         return JsonResponse({"ok": True})
 
     form_data = [
@@ -38,11 +47,18 @@ def employee_list(request):
 
     if q:
         if q.isdigit():
-            # 🔎 If query is numeric, search by ID also
-            records = records.filter(Q(id=int(q)) | Q(data__icontains=q))
+            # 🔎 If query is numeric, search by ID, form name, or data
+            records = records.filter(
+                Q(id=int(q)) |
+                Q(data__icontains=q) |
+                Q(form__name__icontains=q)   # ✅ added
+            )
         else:
-            # 🔎 Otherwise search only in data (like name, etc.)
-            records = records.filter(data__icontains=q)
+            # 🔎 Otherwise search in data and form name
+            records = records.filter(
+                Q(data__icontains=q) |
+                Q(form__name__icontains=q)   # ✅ added
+            )
 
     return render(request, "employees/list.html", {"records": records, "query": q})
 
